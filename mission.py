@@ -1,6 +1,7 @@
 from crew_members import CrewMember
 from ship import Ship
 from rescue_site import RescueSite
+from medical_equipment import MedicalEquipment
 
 # Color constants
 RED = '\033[31m'
@@ -24,6 +25,45 @@ class Mission:
             RescueSite("Venom", 50, "", 5, 12, "Mechanic")
         ]
 
+        # Create only the medic's equipment
+        self.available_equipment = [
+            MedicalEquipment(
+                "Human Rescue Hoist",
+                "Lifts stranded or injured people to safety",
+                250,
+            ),
+            MedicalEquipment(
+                "Zero-Gravity Stretcher",
+                "Moves injured people without worsening their injuries",
+                45,
+            ),
+            MedicalEquipment(
+                "Emergency Trauma Kit",
+                "Treats bleeding, burns, and broken bones",
+                20,
+            ),
+            MedicalEquipment(
+                "Portable Oxygen System",
+                "Provides oxygen to survivors who cannot breathe normally",
+                30,
+            ),
+            MedicalEquipment(
+                "Medical Scanner",
+                "Checks vital signs and identifies injuries",
+                12,
+            ),
+            MedicalEquipment(
+                "Thermal Rescue Blanket",
+                "Protects survivors from extreme temperatures",
+                5,
+            ),
+            MedicalEquipment(
+                "Portable Medical Pod",
+                "Stabilizes critically injured people during transport",
+                300,
+            ),
+        ]
+
         self.available_members = [
             CrewMember("Ron", "Commander", 250),
             CrewMember("Sean", "Commander", 200),
@@ -39,6 +79,7 @@ class Mission:
 
         self.selected_ship = None
         self.selected_rescue_site = None
+        self.selected_equipment = []
         self.crew_members = []
 
     def select_rescue_site(self):

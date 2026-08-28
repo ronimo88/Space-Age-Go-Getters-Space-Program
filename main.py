@@ -456,6 +456,60 @@ class Game:
             if selected:
                 text(SCREEN, "SELECTED", SMALL, GREEN, 980, y + 15)
 
+    def draw_equipment(self):
+        panel(SCREEN, pygame.Rect(30, 175, 1140, 550), "EQUIPMENT MANAGEMENT")
+
+        text(
+            SCREEN,
+            "Add and remove crew equipment.",
+            SMALL,
+            MUTED,
+            50,
+            150,
+        )
+
+        text(SCREEN, "Available equpment", FONT, BLUE, 50, 215)
+        text(SCREEN, "Equipment aboard", FONT, GREEN, 650, 215)
+
+        for i, member in enumerate(self.mission.available_equipment):
+            y = 240 + i * 48
+            rect = pygame.Rect(50, y, 500, 38)
+
+            pygame.draw.rect(SCREEN, PANEL_2, rect, border_radius=6)
+            pygame.draw.rect(SCREEN, (55, 75, 105), rect, 1, border_radius=6)
+
+            text(
+                SCREEN,
+                f"+ {member.name}",
+                SMALL,
+                ROLE_COLORS.get(member.role, TEXT),
+                65,
+                y + 8,
+            )
+            text(SCREEN, member.role, SMALL, MUTED, 245, y + 8)
+            text(SCREEN, f"{member.weight} lbs", SMALL, MUTED, 405, y + 8)
+
+        for i, member in enumerate(self.mission.crew_members):
+            y = 240 + i * 48
+            rect = pygame.Rect(650, y, 500, 38)
+
+            pygame.draw.rect(SCREEN, (30, 55, 42), rect, border_radius=6)
+            pygame.draw.rect(SCREEN, GREEN, rect, 1, border_radius=6)
+
+            text(
+                SCREEN,
+                f"- {member.name}",
+                SMALL,
+                ROLE_COLORS.get(member.role, TEXT),
+                665,
+                y + 8,
+            )
+            text(SCREEN, member.role, SMALL, MUTED, 845, y + 8)
+            text(SCREEN, "CLICK TO REMOVE", SMALL, MUTED, 965, y + 8)
+
+        if not self.mission.crew_members:
+            text(SCREEN, "No crew selected.", SMALL, MUTED, 650, 240)
+
     def draw_crew(self):
         panel(SCREEN, pygame.Rect(30, 175, 1140, 550), "CREW MANAGEMENT")
 
@@ -512,6 +566,8 @@ class Game:
 
     def draw_mission(self):
         panel(SCREEN, pygame.Rect(30, 175, 1140, 550), "MISSION REVIEW")
+
+        # The Launch datetime picker
 
         text(
             SCREEN,
