@@ -295,10 +295,10 @@ class Game:
         # A schematic game map. Positions are intentionally arranged
         # for gameplay and are not intended to represent real astronomy.
         return {
-            "Corneria": (205, 300),
-            "Fichina": (470, 450),
-            "Titania": (745, 300),
-            "Venom": (1000, 475),
+            "Corneria": (205, 350),
+            "Fichina": (470, 550),
+            "Titania": (745, 350),
+            "Venom": (1000, 550),
         }
 
     def draw_space_map(self):
@@ -316,7 +316,7 @@ class Game:
         positions = self.site_positions()
 
         # Space field
-        map_rect = pygame.Rect(50, 225, 1100, 400)
+        map_rect = pygame.Rect(50, 225, 1100, 475)
         pygame.draw.rect(SCREEN, (5, 10, 22), map_rect, border_radius=10)
         pygame.draw.rect(SCREEN, (45, 65, 95), map_rect, 2, border_radius=10)
 
@@ -335,7 +335,7 @@ class Game:
             pygame.draw.line(SCREEN, (45, 65, 95), a, b, 2)
 
         # Home/base station.
-        base_pos = (600, 385)
+        base_pos = (600, 450)
         pygame.draw.circle(SCREEN, (75, 160, 255), base_pos, 34)
         pygame.draw.circle(SCREEN, (210, 235, 255), base_pos, 24)
         pygame.draw.circle(SCREEN, (75, 160, 255), base_pos, 15)
@@ -383,7 +383,7 @@ class Game:
 
         # Legend
         legend_x = 70
-        legend_y = 600
+        legend_y = 675
         text(SCREEN, "Danger:", SMALL, MUTED, legend_x, legend_y)
 
         for level, label in [
@@ -406,7 +406,7 @@ class Game:
                 SMALL,
                 GREEN,
                 800,
-                575,
+                legend_y-20,
             )
             text(
                 SCREEN,
@@ -414,7 +414,7 @@ class Game:
                 SMALL,
                 MUTED,
                 800,
-                600,
+                legend_y,
             )
 
     def draw_ship(self):
