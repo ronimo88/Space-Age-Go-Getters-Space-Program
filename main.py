@@ -4,6 +4,11 @@ import pygame
 from mission import Mission
 
 pygame.init()
+pygame.mixer.init()
+pygame.mixer.music.load("audio/music.mp3")
+# Set volume (0.0 to 1.0)
+pygame.mixer.music.set_volume(1)
+pygame.mixer.music.play(-1)
 
 WIDTH, HEIGHT = 1200, 760
 SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
