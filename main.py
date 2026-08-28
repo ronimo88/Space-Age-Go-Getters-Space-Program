@@ -47,6 +47,13 @@ ROLE_COLORS = {
     "Pilot": (240, 120, 220),
 }
 
+EQUIPMENT_COLORS = {
+    "Human Rescue Hoist": (170, 130, 255),
+    "Emergency Trauma Kit": (80, 190, 255),
+    "Thermal Rescue Blanket": (90, 220, 150),
+    "Medical Scanner": (255, 170, 80),
+}
+
 TAB_WIDTH = 220
 
 
@@ -101,10 +108,11 @@ class Button:
 
 class Game:
     # Pages requested by the user.
-    PAGES = ["RESCUE SITE", "SHIP", "EQUIPMENT", "CREW", "MISSION"]
+    PAGES = ["RESCUE SITE", "SHIP", "CREW", "EQUIPMENT", "MISSION"]
 
     def __init__(self):
         self.reset()
+        self.muted = False
 
     def reset(self):
         self.mission = Mission()
@@ -144,6 +152,53 @@ class Game:
         self.mission.available_members.append(member)
         self.mission.crew_members.remove(member)
         self.set_message(f"{member.name} removed from the crew.", YELLOW)
+
+    def toggle_mute(self):
+        self.muted = not self.muted
+
+        if self.muted:
+            pygame.mixer.music.set_volume(0)
+            self.set_message("Sound muted.", YELLOW)
+        else:
+            pygame.mixer.music.set_volume(1.0)
+            self.set_message("Sound unmuted.", GREEN)
+
+    def draw_mute_button(self):
+        rect = pygame.Rect(WIDTH - 130, 10, 120, 40)
+
+        hovered = rect.collidepoint(pygame.mouse.get_pos())
+
+        if hovered:
+            fill = (35, 70, 110)
+            border = BLUE
+        else:
+            fill = PANEL
+            border = (65, 90, 125)
+
+        pygame.draw.rect(
+            SCREEN,
+            fill,
+            rect,
+            border_radius=8
+        )
+
+        pygame.draw.rect(
+            SCREEN,
+            border,
+            rect,
+            2,
+            border_radius=8
+        )
+
+        label = "UNMUTE" if self.muted else "MUTE"
+
+        center(
+            SCREEN,
+            label,
+            SMALL,
+            WHITE,
+            rect.center
+        )
 
     def evaluate_mission(self):
         if not self.site:
@@ -220,6 +275,16 @@ class Game:
             ):
                 self.go_to(page)
                 return
+
+        mute_rect = pygame.Rect(WIDTH - 130, 10, 120, 40)
+
+        if (
+                event.type == pygame.MOUSEBUTTONDOWN
+                and event.button == 1
+                and mute_rect.collidepoint(event.pos)
+        ):
+            self.toggle_mute()
+            return
 
         if self.page == "RESCUE SITE":
             for i, site in enumerate(self.mission.rescue_sites):
@@ -410,15 +475,31 @@ class Game:
                 f"Selected: {self.site.name}",
                 SMALL,
                 GREEN,
-                800,
+                750,
+                legend_y-60,
+            )
+            text(
+                SCREEN,
+                f"Survivors: {self.site.survivor_count}",
+                SMALL,
+                MUTED,
+                750,
+                legend_y-40,
+            )
+            text(
+                SCREEN,
+                f"Required Role: {self.site.required_role}",
+                SMALL,
+                MUTED,
+                750,
                 legend_y-20,
             )
             text(
                 SCREEN,
-                f"Survivors: {self.site.survivor_count} | Required: {self.site.required_role}",
+                f"Required Equipment: {self.site.required_equipment}",
                 SMALL,
                 MUTED,
-                800,
+                750,
                 legend_y,
             )
 
@@ -461,22 +542,23 @@ class Game:
             if selected:
                 text(SCREEN, "SELECTED", SMALL, GREEN, 980, y + 15)
 
-    def draw_equipment(self):
-        panel(SCREEN, pygame.Rect(30, 175, 1140, 550), "EQUIPMENT MANAGEMENT")
+
+    def draw_crew(self):
+        panel(SCREEN, pygame.Rect(30, 175, 1140, 550), "CREW MANAGEMENT")
 
         text(
             SCREEN,
-            "Add and remove crew equipment.",
+            "Add and remove crew members. Pay attention to what roles are needed.",
             SMALL,
             MUTED,
             50,
             150,
         )
 
-        text(SCREEN, "Available equpment", FONT, BLUE, 50, 215)
-        text(SCREEN, "Equipment aboard", FONT, GREEN, 650, 215)
+        text(SCREEN, "Available crew", FONT, BLUE, 50, 215)
+        text(SCREEN, "Crew aboard", FONT, GREEN, 650, 215)
 
-        for i, member in enumerate(self.mission.available_equipment):
+        for i, member in enumerate(self.mission.available_members):
             y = 240 + i * 48
             rect = pygame.Rect(50, y, 500, 38)
 
@@ -515,22 +597,22 @@ class Game:
         if not self.mission.crew_members:
             text(SCREEN, "No crew selected.", SMALL, MUTED, 650, 240)
 
-    def draw_crew(self):
-        panel(SCREEN, pygame.Rect(30, 175, 1140, 550), "CREW MANAGEMENT")
+    def draw_equipment(self):
+        panel(SCREEN, pygame.Rect(30, 175, 1140, 550), "EQUIPMENT MANAGEMENT")
 
         text(
             SCREEN,
-            "Add and remove crew members. Pay attention to what roles are needed.",
+            "Add and remove crew equipment.",
             SMALL,
             MUTED,
             50,
             150,
         )
 
-        text(SCREEN, "Available crew", FONT, BLUE, 50, 215)
-        text(SCREEN, "Crew aboard", FONT, GREEN, 650, 215)
+        text(SCREEN, "Available equpment", FONT, BLUE, 50, 215)
+        text(SCREEN, "Equipment aboard", FONT, GREEN, 650, 215)
 
-        for i, member in enumerate(self.mission.available_members):
+        for i, member in enumerate(self.mission.available_equipment):
             y = 240 + i * 48
             rect = pygame.Rect(50, y, 500, 38)
 
@@ -605,24 +687,32 @@ class Game:
             )
             text(
                 SCREEN,
+                f"Required Equipment: {self.site.required_equipment}",
+                SMALL,
+                EQUIPMENT_COLORS.get(self.site.required_equipment, TEXT),
+                70,
+                345,
+            )
+            text(
+                SCREEN,
                 f"Danger: {self.site.get_danger_description()}",
                 SMALL,
                 DANGER_COLORS.get(self.site.danger_level, MUTED),
                 70,
-                345,
+                380,
             )
         else:
             text(SCREEN, "No rescue site selected.", SMALL, RED, 70, 260)
 
         if self.ship:
-            text(SCREEN, f"Ship: {self.ship.name}", SMALL, TEXT, 480, 260)
+            text(SCREEN, f"Ship: {self.ship.name}", SMALL, TEXT, 70, 475)
             text(
                 SCREEN,
                 f"Capacity: {self.ship.capacity}",
                 SMALL,
                 MUTED,
-                480,
-                275,
+                70,
+                510,
             )
             remaining = self.ship.capacity - len(self.mission.crew_members)
             text(
@@ -630,11 +720,11 @@ class Game:
                 f"Remaining seats: {remaining}",
                 SMALL,
                 GREEN if remaining >= (self.site.survivor_count if self.site else 0) else RED,
-                480,
-                310,
+                70,
+                545,
             )
         else:
-            text(SCREEN, "No ship selected.", SMALL, RED, 480, 260)
+            text(SCREEN, "No ship selected.", SMALL, RED, 70, 475)
 
         text(
             SCREEN,
@@ -672,15 +762,6 @@ class Game:
             self.launch,
             launch_ready,
         ).draw(SCREEN)
-
-        text(
-            SCREEN,
-            "Tip: Use tabs 1-4 or click the pages above.",
-            SMALL,
-            MUTED,
-            760,
-            685,
-        )
 
     def draw_launch(self):
         elapsed = pygame.time.get_ticks() - self.launch_start
@@ -791,6 +872,10 @@ class Game:
 
         if not self.launching and self.message:
             text(SCREEN, self.message, SMALL, self.message_color, 30, 735)
+
+        self.draw_mute_button()
+
+        # Mute Button
 
 
 def main():

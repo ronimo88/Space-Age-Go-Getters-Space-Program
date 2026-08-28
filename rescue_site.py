@@ -7,7 +7,8 @@ class RescueSite:
         emergency_type,
         danger_level,
         survivor_count,
-        required_role
+        required_role,
+        required_equipment
     ):
         self.name = name
         self.distance = distance
@@ -15,6 +16,7 @@ class RescueSite:
         self.danger_level = danger_level
         self.survivor_count = survivor_count
         self.required_role = required_role
+        self.required_equipment = required_equipment
 
     @staticmethod
     def get_headers(show_number):

@@ -19,10 +19,10 @@ class Mission:
         ]
 
         self.rescue_sites = [
-            RescueSite("Corneria", 10, "", 1, 10, "Medic"),
-            RescueSite("Fichina", 20, "", 2, 15, "Engineer"),
-            RescueSite("Titania", 20, "", 3, 5, "Commander"),
-            RescueSite("Venom", 50, "", 5, 12, "Mechanic")
+            RescueSite("Corneria", 10, "", 1, 10, "Medic", "Human Rescue Hoist"),
+            RescueSite("Fichina", 20, "", 2, 15, "Engineer", "Emergency Trauma Kit"),
+            RescueSite("Titania", 20, "", 3, 5, "Commander", "Thermal Rescue Blanket"),
+            RescueSite("Venom", 50, "", 5, 12, "Mechanic", "Medical Scanner")
         ]
 
         # Create only the medic's equipment
@@ -82,6 +82,7 @@ class Mission:
         self.selected_equipment = []
         self.crew_members = []
 
+    """
     def select_rescue_site(self):
 
         print(f"{BLUE}Select a rescue site{RESET}\n")
@@ -227,3 +228,4 @@ class Mission:
 
         else:
             print(f"{GREEN}Mission Success! You have rescued everyone from {self.selected_rescue_site.name}!{RESET}\n")
+    """

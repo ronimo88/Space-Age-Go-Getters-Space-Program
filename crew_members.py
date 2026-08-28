@@ -16,10 +16,6 @@ class CrewMember:
     def update_weight(self, new_weight):
         self.weight = new_weight
 
-    @staticmethod
-    def get_headers():
-        headers = ["Number", "Name", "Role", "Weight"]
-        return f"{headers[0]:<10}{headers[1]:<15}{headers[2]:<15}{headers[3]:<15}"
 
 
 
