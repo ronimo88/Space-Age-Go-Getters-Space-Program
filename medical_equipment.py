@@ -13,12 +13,3 @@ class MedicalEquipment:
         print("-" * 50)
 
 
-# Display the medic equipment to verify that it was created
-print("MEDIC EQUIPMENT")
-print("Future assigned ship: Rectafongulus")
-print("=" * 50)
-
-#for item in medical_equipment:
-   # item.display_info()
-
-
