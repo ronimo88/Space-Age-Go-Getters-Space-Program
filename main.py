@@ -42,6 +42,8 @@ ROLE_COLORS = {
     "Pilot": (240, 120, 220),
 }
 
+TAB_WIDTH = 220
+
 
 def text(surface, value, font, color, x, y):
     surface.blit(font.render(str(value), True, color), (x, y))
@@ -94,7 +96,7 @@ class Button:
 
 class Game:
     # Pages requested by the user.
-    PAGES = ["RESCUE SITE", "SHIP", "CREW", "MISSION"]
+    PAGES = ["RESCUE SITE", "SHIP", "EQUIPMENT", "CREW", "MISSION"]
 
     def __init__(self):
         self.reset()
@@ -205,7 +207,7 @@ class Game:
 
         # Navigation tabs.
         for i, page in enumerate(self.PAGES):
-            rect = pygame.Rect(30 + i * 285, 92, 270, 48)
+            rect = pygame.Rect(30 + i * (TAB_WIDTH+10), 92, TAB_WIDTH, 48)
             if (
                 event.type == pygame.MOUSEBUTTONDOWN
                 and event.button == 1
@@ -280,7 +282,7 @@ class Game:
         pygame.draw.line(SCREEN, (45, 65, 95), (30, 82), (1170, 82), 2)
 
         for i, page in enumerate(self.PAGES):
-            rect = pygame.Rect(30 + i * 285, 92, 270, 48)
+            rect = pygame.Rect(30 + i * (TAB_WIDTH + 10), 92, TAB_WIDTH, 48)
             active = page == self.page
             fill = (30, 65, 100) if active else PANEL
             border = BLUE if active else (55, 75, 105)
