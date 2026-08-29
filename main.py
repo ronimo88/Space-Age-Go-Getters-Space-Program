@@ -250,11 +250,24 @@ class Game:
             elif event.key == pygame.K_3:
                 self.go_to("CREW")
             elif event.key == pygame.K_4:
+                self.go_to("EQUIPMENT")
+            elif event.key == pygame.K_5:
                 self.go_to("MISSION")
             elif event.key == pygame.K_ESCAPE and self.launching:
                 self.launching = False
                 self.result = None
                 self.page = "MISSION"
+
+        # Mute Button
+        mute_rect = pygame.Rect(WIDTH - 130, 10, 120, 40)
+
+        if (
+                event.type == pygame.MOUSEBUTTONDOWN
+                and event.button == 1
+                and mute_rect.collidepoint(event.pos)
+        ):
+            self.toggle_mute()
+            return
 
         if self.launching:
             if (
@@ -275,16 +288,6 @@ class Game:
             ):
                 self.go_to(page)
                 return
-
-        mute_rect = pygame.Rect(WIDTH - 130, 10, 120, 40)
-
-        if (
-                event.type == pygame.MOUSEBUTTONDOWN
-                and event.button == 1
-                and mute_rect.collidepoint(event.pos)
-        ):
-            self.toggle_mute()
-            return
 
         if self.page == "RESCUE SITE":
             for i, site in enumerate(self.mission.rescue_sites):
@@ -886,6 +889,7 @@ def main():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+
             game.handle_event(event)
 
         game.draw()
