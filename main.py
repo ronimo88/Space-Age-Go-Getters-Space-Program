@@ -1,5 +1,8 @@
 import sys
 import pygame
+print("Target Package:", pygame.__file__)
+print("Version Info:", pygame.version.ver)
+import random
 
 from mission import Mission
 
@@ -8,7 +11,6 @@ pygame.mixer.init()
 pygame.mixer.music.load("audio/music.mp3")
 # Set volume (0.0 to 1.0)
 pygame.mixer.music.set_volume(1)
-pygame.mixer.music.play(-1)
 
 WIDTH, HEIGHT = 1200, 760
 SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -19,7 +21,9 @@ FONT = pygame.font.SysFont("consolas", 20)
 SMALL = pygame.font.SysFont("consolas", 16)
 TITLE = pygame.font.SysFont("consolas", 34, bold=True)
 BIG = pygame.font.SysFont("consolas", 48, bold=True)
+HUGE = pygame.font.SysFont("consolas", 100, bold=True)
 
+SPLASH_BG = (0, 0, 0)
 BG = (7, 12, 25)
 PANEL = (15, 24, 43)
 PANEL_2 = (20, 32, 55)
@@ -56,6 +60,35 @@ EQUIPMENT_COLORS = {
 
 TAB_WIDTH = 220
 
+STARS = [(random.randint(0, WIDTH), random.randint(0, HEIGHT), random.randint(1, 2)) for _ in range(150)]
+
+LAUNCH_SOUND = pygame.mixer.Sound("audio/launch.mp3")
+SUCCESS_SOUND = pygame.mixer.Sound("audio/mission_complete.mp3")
+INTRO_SOUND = pygame.mixer.Sound("audio/intro.mp3")
+CRAWL_TITLE = "SPACE AGE GO-GETTERS"
+
+try:
+    TITLE_SURFACE = pygame.image.load('images/title_text.png').convert_alpha()
+except pygame.error as e:
+    print(f"Unable to load image: {e}")
+    sys.exit()
+
+CRAWL_TEXT = [
+    "It is a perilous time for the galaxy.",
+    "",
+    "Distress signals echo across the stars from",
+    "crews stranded on hostile worlds, their ships",
+    "crippled and supplies running low.",
+    "",
+    "You command the last rescue fleet capable of",
+    "reaching them in time. Choose your ship wisely,",
+    "assemble a crew fit for the danger ahead, and",
+    "gather the equipment needed to bring everyone",
+    "home safely.",
+    "",
+    "The mission begins now....",
+]
+
 
 def text(surface, value, font, color, x, y):
     surface.blit(font.render(str(value), True, color), (x, y))
@@ -71,6 +104,11 @@ def panel(surface, rect, title=None):
     pygame.draw.rect(surface, (45, 65, 95), rect, 2, border_radius=12)
     if title:
         text(surface, title, FONT, BLUE, rect.x + 18, rect.y + 14)
+
+def draw_starfield():
+    SCREEN.fill((0, 0, 0))
+    for x, y, size in STARS:
+        pygame.draw.circle(SCREEN, WHITE, (x, y), size)
 
 
 class Button:
@@ -113,6 +151,17 @@ class Game:
     def __init__(self):
         self.reset()
         self.muted = False
+        self.crawl_y = HEIGHT + 500  # start below the screen
+        self.crawl_speed = 0.6  # px per frame, tune to taste
+        self.crawl_started = True
+        self.crawl_done = False
+        self.title_font_size = 200
+        self.title_width = TITLE_SURFACE.get_width()
+        self.title_height = TITLE_SURFACE.get_height()
+        INTRO_SOUND.play()
+        INTRO_SOUND.set_volume(1)
+        self.splash = True  # NEW — show splash on startup
+        self.splash_start = pygame.time.get_ticks()
 
     def reset(self):
         self.mission = Mission()
@@ -122,6 +171,8 @@ class Game:
         self.result = None
         self.launch_start = 0
         self.launching = False
+        self.mission_running = True
+        SUCCESS_SOUND.stop()
 
     @property
     def site(self):
@@ -130,6 +181,63 @@ class Game:
     @property
     def ship(self):
         return self.mission.selected_ship
+
+    def draw_crawl(self):
+        draw_starfield()
+
+        # Title card fades in at the very start
+
+        if self.crawl_y > HEIGHT + 200:
+            #title_font = pygame.font.SysFont("consolas", int(self.title_font_size), bold=True)
+            #center(SCREEN, CRAWL_TITLE, title_font, YELLOW, (WIDTH // 2, HEIGHT // 2 - 50))
+
+            # Resize using the calculated dimensions
+            resized_image = pygame.transform.scale(TITLE_SURFACE, (self.title_width, self.title_height))
+            new_rect = resized_image.get_rect()
+            new_rect.center = (WIDTH // 2, HEIGHT // 2)
+            SCREEN.blit(resized_image, new_rect)
+
+
+        line_height = 34
+        y = self.crawl_y
+
+        if self.title_width > 1:
+            self.title_width -= 3
+
+        if self.title_height > 1:
+            self.title_height -= 1
+
+        for line in reversed(CRAWL_TEXT):  # <-- only change
+            depth = max(0.0, min(1.0, (HEIGHT * 0.9 - y) / (HEIGHT * 0.9)))
+            scale = max(0.35, 1.0 - depth * 0.65)
+
+            if line and -40 < y < HEIGHT:
+                font_size = max(10, int(30 * scale))
+                crawl_font = pygame.font.SysFont("consolas", font_size, bold=True)
+                rendered = crawl_font.render(line, True, YELLOW)
+                rect = rendered.get_rect(center=(WIDTH // 2, int(y)))
+                SCREEN.blit(rendered, rect)
+
+            y -= line_height * scale
+
+        self.crawl_y -= self.crawl_speed
+        self.title_font_size -= 0.5
+
+        # End the crawl once everything has scrolled off the top
+        if y < -50:
+            self.crawl_done = True
+            INTRO_SOUND.stop()
+
+    def draw_splash(self):
+        SCREEN.fill(SPLASH_BG)
+
+        center(SCREEN, "SPACE AGE GO-GETTERS ", BIG, WHITE, (WIDTH // 2, 280))
+        center(SCREEN, "SPACE PROGRAM", TITLE, BLUE, (WIDTH // 2, 340))
+
+        # simple pulsing "press to continue" prompt
+        elapsed = pygame.time.get_ticks() - self.splash_start
+        if (elapsed // 500) % 2 == 0:  # blinks every 0.5s
+            center(SCREEN, "Click or press any key to begin", FONT, MUTED, (WIDTH // 2, 460))
 
     def set_message(self, message, color=TEXT):
         self.message = message
@@ -152,6 +260,16 @@ class Game:
         self.mission.available_members.append(member)
         self.mission.crew_members.remove(member)
         self.set_message(f"{member.name} removed from the crew.", YELLOW)
+
+    def add_equipment(self, item):
+        self.mission.selected_equipment.append(item)
+        self.mission.available_equipment.remove(item)
+        self.set_message(f"{item.name} added to the equipment list.", GREEN)
+
+    def remove_equipment(self, item):
+        self.mission.available_equipment.append(item)
+        self.mission.selected_equipment.remove(item)
+        self.set_message(f"{item.name} removed from the equipment list.", YELLOW)
 
     def toggle_mute(self):
         self.muted = not self.muted
@@ -225,6 +343,16 @@ class Game:
                 RED,
             )
 
+        if not any(
+            item.name == self.site.required_equipment
+            for item in self.mission.selected_equipment
+        ):
+            return (
+                False,
+                f"Mission Failed! {self.site.name} requires a {self.site.required_equipment}.",
+                RED,
+            )
+
         return (
             True,
             f"Mission Success! Everyone has been rescued from {self.site.name}!",
@@ -236,12 +364,27 @@ class Game:
         self.result = (success, message, color)
         self.launching = True
         self.launch_start = pygame.time.get_ticks()
+        pygame.mixer.music.stop()
+        LAUNCH_SOUND.play()
 
     def go_to(self, page):
         self.page = page
         self.set_message(f"{page.title()} page")
 
     def handle_event(self, event):
+
+        if not self.crawl_done:
+            if event.type in (pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN):
+                self.crawl_done = True
+                INTRO_SOUND.stop()
+            return
+
+        if self.splash:
+            if event.type in (pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN):
+                self.splash = False
+                pygame.mixer.music.play(-1)
+            return  # ignore all other input while splash is up
+
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_1:
                 self.go_to("RESCUE SITE")
@@ -257,6 +400,7 @@ class Game:
                 self.launching = False
                 self.result = None
                 self.page = "MISSION"
+                pygame.mixer.music.play(-1)
 
         # Mute Button
         mute_rect = pygame.Rect(WIDTH - 130, 10, 120, 40)
@@ -276,6 +420,8 @@ class Game:
                 and pygame.Rect(WIDTH // 2 - 120, 535, 240, 50).collidepoint(event.pos)
             ):
                 self.reset()
+                pygame.mixer.music.play(-1)
+
             return
 
         # Navigation tabs.
@@ -332,6 +478,29 @@ class Game:
                     self.remove_member(member)
                     return
 
+        elif self.page == "EQUIPMENT":
+            # Available equipment on left.
+            for i, member in enumerate(self.mission.available_equipment):
+                rect = pygame.Rect(50, 240 + i * 48, 500, 38)
+                if (
+                        event.type == pygame.MOUSEBUTTONDOWN
+                        and event.button == 1
+                        and rect.collidepoint(event.pos)
+                ):
+                    self.add_equipment(member)
+                    return
+
+            # Current crew on right.
+            for i, item in enumerate(self.mission.selected_equipment):
+                rect = pygame.Rect(650, 240 + i * 48, 500, 38)
+                if (
+                        event.type == pygame.MOUSEBUTTONDOWN
+                        and event.button == 1
+                        and rect.collidepoint(event.pos)
+                ):
+                    self.remove_equipment(item)
+                    return
+
         elif self.page == "MISSION":
             launch_rect = pygame.Rect(300, 650, 340, 55)
             reset_rect = pygame.Rect(60, 650, 170, 55)
@@ -379,7 +548,7 @@ class Game:
 
         text(
             SCREEN,
-            "Click a destination to select it. Routes are schematic and distances come from the mission data.",
+            "Click a destination to select it.",
             SMALL,
             MUTED,
             50,
@@ -551,7 +720,7 @@ class Game:
 
         text(
             SCREEN,
-            "Add and remove crew members. Pay attention to what roles are needed.",
+            "Add and remove crew members. Check the rescue site to see what roles are needed.",
             SMALL,
             MUTED,
             50,
@@ -605,17 +774,17 @@ class Game:
 
         text(
             SCREEN,
-            "Add and remove crew equipment.",
+            "Add and remove crew equipment. Check the rescue site to see what equipment is needed.",
             SMALL,
             MUTED,
             50,
             150,
         )
 
-        text(SCREEN, "Available equpment", FONT, BLUE, 50, 215)
+        text(SCREEN, "Available equipment", FONT, BLUE, 50, 215)
         text(SCREEN, "Equipment aboard", FONT, GREEN, 650, 215)
 
-        for i, member in enumerate(self.mission.available_equipment):
+        for i, item in enumerate(self.mission.available_equipment):
             y = 240 + i * 48
             rect = pygame.Rect(50, y, 500, 38)
 
@@ -624,16 +793,16 @@ class Game:
 
             text(
                 SCREEN,
-                f"+ {member.name}",
+                f"+ {item.name}",
                 SMALL,
-                ROLE_COLORS.get(member.role, TEXT),
+                EQUIPMENT_COLORS.get(item.name, TEXT),
                 65,
                 y + 8,
             )
-            text(SCREEN, member.role, SMALL, MUTED, 245, y + 8)
-            text(SCREEN, f"{member.weight} lbs", SMALL, MUTED, 405, y + 8)
 
-        for i, member in enumerate(self.mission.crew_members):
+            text(SCREEN, f"{item.weight} lbs", SMALL, MUTED, 405, y + 8)
+
+        for i, item in enumerate(self.mission.selected_equipment):
             y = 240 + i * 48
             rect = pygame.Rect(650, y, 500, 38)
 
@@ -642,17 +811,17 @@ class Game:
 
             text(
                 SCREEN,
-                f"- {member.name}",
+                f"- {item.name}",
                 SMALL,
-                ROLE_COLORS.get(member.role, TEXT),
+                EQUIPMENT_COLORS.get(item.name, TEXT),
                 665,
                 y + 8,
             )
-            text(SCREEN, member.role, SMALL, MUTED, 845, y + 8)
+
             text(SCREEN, "CLICK TO REMOVE", SMALL, MUTED, 965, y + 8)
 
-        if not self.mission.crew_members:
-            text(SCREEN, "No crew selected.", SMALL, MUTED, 650, 240)
+        if not self.mission.selected_equipment:
+            text(SCREEN, "No equipment selected.", SMALL, MUTED, 650, 240)
 
     def draw_mission(self):
         panel(SCREEN, pygame.Rect(30, 175, 1140, 550), "MISSION REVIEW")
@@ -743,6 +912,10 @@ class Game:
                 member.role == self.site.required_role
                 for member in self.mission.crew_members
             )
+            has_equipment = any(
+                item.name == self.site.required_equipment
+                for item in self.mission.selected_equipment
+            )
             text(
                 SCREEN,
                 f"Required-role check: {'READY' if has_role else 'MISSING'}",
@@ -750,6 +923,14 @@ class Game:
                 GREEN if has_role else RED,
                 800,
                 310,
+            )
+            text(
+                SCREEN,
+                f"Required-equipment check: {'READY' if has_equipment else 'MISSING'}",
+                SMALL,
+                GREEN if has_equipment else RED,
+                800,
+                360,
             )
 
         Button(
@@ -768,7 +949,7 @@ class Game:
 
     def draw_launch(self):
         elapsed = pygame.time.get_ticks() - self.launch_start
-        progress = min(1.0, elapsed / 2200.0)
+        progress = min(1.0, elapsed / 4000.0)
 
         for i in range(80):
             x = (i * 83 + 37) % WIDTH
@@ -795,8 +976,8 @@ class Game:
                 border_radius=15,
             )
 
-            sx = int(160 + 880 * progress)
-            sy = 390 - int(90 * progress)
+            sx = int(500 + 200 * progress)
+            sy = 600 - int(550 * progress)
 
             pygame.draw.polygon(
                 SCREEN,
@@ -823,7 +1004,14 @@ class Game:
             )
             return
 
+        LAUNCH_SOUND.stop()
+
         success, message, color = self.result
+
+        if success and self.mission_running:
+            SUCCESS_SOUND.play()
+            self.mission_running = False
+
 
         center(
             SCREEN,
@@ -859,8 +1047,22 @@ class Game:
         ).draw(SCREEN)
 
     def draw(self):
+
+        if not self.crawl_started:
+            return
+
+        if not self.crawl_done:
+            self.draw_crawl()
+            return
+
+        if self.splash:
+            self.draw_splash()
+            return
+
         SCREEN.fill(BG)
-        self.draw_header()
+
+        if not self.launching:
+            self.draw_header()
 
         if self.launching:
             self.draw_launch()
@@ -870,6 +1072,8 @@ class Game:
             self.draw_ship()
         elif self.page == "CREW":
             self.draw_crew()
+        elif self.page == "EQUIPMENT":
+            self.draw_equipment()
         elif self.page == "MISSION":
             self.draw_mission()
 

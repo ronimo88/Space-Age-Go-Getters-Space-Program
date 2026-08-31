@@ -13,9 +13,9 @@ RESET = '\033[0m'
 class Mission:
     def __init__(self):
         self.ships = [
-            Ship("Rectafongulus", 10, 100, 20000),
-            Ship("Savior", 15, 200000, 30000),
-            Ship("Avenger", 20, 200000, 30000)
+            Ship("Rectafongulus", 300, 100, 40000),
+            Ship("Savior", 15, 75, 30000),
+            Ship("Avenger", 20, 50, 20000)
         ]
 
         self.rescue_sites = [
