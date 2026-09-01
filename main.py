@@ -150,7 +150,7 @@ class Game:
 
     def __init__(self):
         self.page = None
-        self.reset()
+        self.reset_mission()
         self.muted = False
         self.start_delay = 45
         self.crawl_y = HEIGHT + 500  # start below the screen
@@ -165,7 +165,7 @@ class Game:
         INTRO_SOUND.play()
         INTRO_SOUND.set_volume(1)
 
-    def reset(self):
+    def reset_mission(self):
         self.mission = Mission()
         self.page = "RESCUE SITE"
         self.message = "Select a rescue site to begin planning."
@@ -178,6 +178,18 @@ class Game:
         self.credits_timer = 0
         self.mission_success = False
         SUCCESS_SOUND.stop()
+
+    def reset_game(self):
+        self.page = None
+        self.reset_mission()
+        self.start_delay = 45
+        self.crawl_y = HEIGHT + 500  # start below the screen
+        self.crawl_started = False
+        self.crawl_done = False
+        self.splash = True  # NEW — show splash on startup
+        self.splash_start = pygame.time.get_ticks()
+        INTRO_SOUND.play()
+        INTRO_SOUND.set_volume(1)
 
     def go_to_credits(self):
         self.page = "CREDITS"
@@ -285,9 +297,13 @@ class Game:
 
         if self.muted:
             pygame.mixer.music.set_volume(0)
+            for i in range(pygame.mixer.get_num_channels()):
+                pygame.mixer.Channel(i).set_volume(0.0)
             self.set_message("Sound muted.", YELLOW)
         else:
             pygame.mixer.music.set_volume(1.0)
+            for i in range(pygame.mixer.get_num_channels()):
+                pygame.mixer.Channel(i).set_volume(1.0)
             self.set_message("Sound unmuted.", GREEN)
 
     def draw_mute_button(self):
@@ -392,6 +408,7 @@ class Game:
         self.launch_start = pygame.time.get_ticks()
         pygame.mixer.music.stop()
         LAUNCH_SOUND.play()
+        LAUNCH_SOUND.set_volume(0.0) if self.muted else LAUNCH_SOUND.set_volume(1.0)
 
     def go_to(self, page):
         self.page = page
@@ -413,8 +430,7 @@ class Game:
 
         if self.page == "CREDITS":
             if event.type in (pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN):
-                pygame.mixer.music.play(-1)
-                self.reset()
+                self.reset_game()
             return
 
         if event.type == pygame.KEYDOWN:
@@ -456,7 +472,7 @@ class Game:
                     self.launching = False
                     self.go_to_credits()
                 else:
-                    self.reset()
+                    self.reset_mission()
                     pygame.mixer.music.play(-1)
 
             return
@@ -553,7 +569,7 @@ class Game:
                 and event.button == 1
                 and reset_rect.collidepoint(event.pos)
             ):
-                self.reset()
+                self.reset_mission()
 
     def draw_header(self):
         text(SCREEN, "SPACE AGE GO-GETTERS", TITLE, TEXT, 30, 22)
@@ -978,7 +994,7 @@ class Game:
         Button(
             (60, 650, 170, 55),
             "RESET",
-            self.reset,
+            self.reset_mission,
         ).draw(SCREEN)
 
         launch_ready = self.site is not None and self.ship is not None
@@ -1080,6 +1096,7 @@ class Game:
 
         if success and self.mission_running:
             SUCCESS_SOUND.play()
+            SUCCESS_SOUND.set_volume(0.0) if self.muted else SUCCESS_SOUND.set_volume(1.0)
             self.mission_running = False
             self.mission_success = True
 
@@ -1121,7 +1138,7 @@ class Game:
             Button(
                 (WIDTH // 2 - 120, 535, 240, 50),
                 "PLAY AGAIN",
-                self.reset,
+                self.reset_mission,
             ).draw(SCREEN)
 
 
@@ -1159,8 +1176,7 @@ class Game:
         self.credits_timer += 1
 
         if self.credits_timer > 15*60:
-            self.reset()
-            pygame.mixer.music.play(-1)
+            self.reset_game()
 
     def draw(self):
 
