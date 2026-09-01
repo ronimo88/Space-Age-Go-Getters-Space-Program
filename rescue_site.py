@@ -4,7 +4,7 @@ class RescueSite:
         self,
         name,
         distance,
-        emergency_type,
+        rescue_time,
         danger_level,
         survivor_count,
         required_role,
@@ -12,7 +12,7 @@ class RescueSite:
     ):
         self.name = name
         self.distance = distance
-        self.emergency_type = emergency_type # (1) Life Support Failure (2) Engine Failure (3) Missing Crew
+        self.rescue_time = rescue_time # (1) Life Support Failure (2) Engine Failure (3) Missing Crew
         self.danger_level = danger_level
         self.survivor_count = survivor_count
         self.required_role = required_role
@@ -29,7 +29,7 @@ class RescueSite:
 
     def summary(self):
         return(
-            f"{self.name:<15}{self.distance:<15}{self.emergency_type:<20}{self.danger_level:<15}{self.survivor_count:<15}{self.required_role:<15}"
+            f"{self.name:<15}{self.distance:<15}{self.rescue_time:<20}{self.danger_level:<15}{self.survivor_count:<15}{self.required_role:<15}"
         )
 
     def get_danger_description(self):

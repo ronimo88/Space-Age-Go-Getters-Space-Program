@@ -149,19 +149,21 @@ class Game:
     PAGES = ["RESCUE SITE", "SHIP", "CREW", "EQUIPMENT", "MISSION"]
 
     def __init__(self):
+        self.page = None
         self.reset()
         self.muted = False
+        self.start_delay = 45
         self.crawl_y = HEIGHT + 500  # start below the screen
         self.crawl_speed = 0.6  # px per frame, tune to taste
-        self.crawl_started = True
+        self.crawl_started = False
         self.crawl_done = False
         self.title_font_size = 200
         self.title_width = TITLE_SURFACE.get_width()
         self.title_height = TITLE_SURFACE.get_height()
-        INTRO_SOUND.play()
-        INTRO_SOUND.set_volume(1)
         self.splash = True  # NEW — show splash on startup
         self.splash_start = pygame.time.get_ticks()
+        INTRO_SOUND.play()
+        INTRO_SOUND.set_volume(1)
 
     def reset(self):
         self.mission = Mission()
@@ -172,7 +174,14 @@ class Game:
         self.launch_start = 0
         self.launching = False
         self.mission_running = True
+        self.credits_y = HEIGHT
+        self.credits_timer = 0
+        self.mission_success = False
         SUCCESS_SOUND.stop()
+
+    def go_to_credits(self):
+        self.page = "CREDITS"
+        self.set_message("")
 
     @property
     def site(self):
@@ -320,16 +329,26 @@ class Game:
 
     def evaluate_mission(self):
         if not self.site:
-            return False, "Mission Failed! No rescue site selected.", RED
+            return False, "No rescue site selected.", RED
 
         if not self.ship:
-            return False, "Mission Failed! No ship selected.", RED
+            return False, "No ship selected.", RED
 
         remaining = self.ship.capacity - len(self.mission.crew_members)
         if remaining < self.site.survivor_count:
             return (
                 False,
-                "Mission Failed! There is not enough room for the survivors.",
+                "There is not enough room for the survivors.",
+                RED,
+            )
+
+        if not any(
+            member.role == "Pilot"
+            for member in self.mission.crew_members
+        ):
+            return (
+                False,
+                f"You don't have a pilot to fly the ship.",
                 RED,
             )
 
@@ -339,7 +358,7 @@ class Game:
         ):
             return (
                 False,
-                f"Mission Failed! {self.site.name} requires a {self.site.required_role}.",
+                f"{self.site.name} requires a {self.site.required_role}.",
                 RED,
             )
 
@@ -349,13 +368,20 @@ class Game:
         ):
             return (
                 False,
-                f"Mission Failed! {self.site.name} requires a {self.site.required_equipment}.",
+                f"{self.site.name} requires a {self.site.required_equipment}.",
+                RED,
+            )
+
+        if self.mission.travel_hours > self.mission.selected_rescue_site.rescue_time:
+            return (
+                False,
+                f"It took too long to reach {self.site.name}. All the survivors died.",
                 RED,
             )
 
         return (
             True,
-            f"Mission Success! Everyone has been rescued from {self.site.name}!",
+            f"Everyone has been rescued from {self.site.name}!",
             GREEN,
         )
 
@@ -385,6 +411,12 @@ class Game:
                 pygame.mixer.music.play(-1)
             return  # ignore all other input while splash is up
 
+        if self.page == "CREDITS":
+            if event.type in (pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN):
+                pygame.mixer.music.play(-1)
+                self.reset()
+            return
+
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_1:
                 self.go_to("RESCUE SITE")
@@ -413,14 +445,19 @@ class Game:
             self.toggle_mute()
             return
 
+
         if self.launching:
             if (
                 event.type == pygame.MOUSEBUTTONDOWN
                 and event.button == 1
                 and pygame.Rect(WIDTH // 2 - 120, 535, 240, 50).collidepoint(event.pos)
             ):
-                self.reset()
-                pygame.mixer.music.play(-1)
+                if self.mission_success:
+                    self.launching = False
+                    self.go_to_credits()
+                else:
+                    self.reset()
+                    pygame.mixer.music.play(-1)
 
             return
 
@@ -624,21 +661,9 @@ class Game:
                 self.select_site(site)
 
         # Legend
-        legend_x = 70
-        legend_y = 675
-        text(SCREEN, "Danger:", SMALL, MUTED, legend_x, legend_y)
+        legend_x = 75
+        legend_y = 660
 
-        for level, label in [
-            (1, "Low"),
-            (2, "Moderate"),
-            (3, "High"),
-            (4, "Severe"),
-            (5, "Critical"),
-        ]:
-            color = DANGER_COLORS[level]
-            pygame.draw.circle(SCREEN, color, (legend_x + 75, legend_y + 9), 6)
-            text(SCREEN, label, SMALL, MUTED, legend_x + 87, legend_y)
-            legend_x += 105
 
         # Selected destination details.
         if self.site:
@@ -647,31 +672,39 @@ class Game:
                 f"Selected: {self.site.name}",
                 SMALL,
                 GREEN,
-                750,
-                legend_y-60,
+                legend_x,
+                legend_y-80,
             )
             text(
                 SCREEN,
                 f"Survivors: {self.site.survivor_count}",
                 SMALL,
                 MUTED,
-                750,
-                legend_y-40,
+                legend_x,
+                legend_y-60,
             )
             text(
                 SCREEN,
                 f"Required Role: {self.site.required_role}",
                 SMALL,
                 MUTED,
-                750,
-                legend_y-20,
+                legend_x,
+                legend_y-40,
             )
             text(
                 SCREEN,
                 f"Required Equipment: {self.site.required_equipment}",
                 SMALL,
                 MUTED,
-                750,
+                legend_x,
+                legend_y-20,
+            )
+            text(
+                SCREEN,
+                f"Rescue Time Limit: {self.site.rescue_time} hours",
+                SMALL,
+                MUTED,
+                legend_x,
                 legend_y,
             )
 
@@ -688,7 +721,7 @@ class Game:
         )
 
         for i, ship in enumerate(self.mission.ships):
-            y = 225 + i * 130
+            y = 225 + i * 120
             rect = pygame.Rect(50, y, 1100, 105)
             selected = ship is self.ship
 
@@ -867,9 +900,9 @@ class Game:
             )
             text(
                 SCREEN,
-                f"Danger: {self.site.get_danger_description()}",
+                f"Rescue Time Limit: {self.site.rescue_time}",
                 SMALL,
-                DANGER_COLORS.get(self.site.danger_level, MUTED),
+                MUTED,
                 70,
                 380,
             )
@@ -886,6 +919,14 @@ class Game:
                 70,
                 510,
             )
+            text(
+                SCREEN,
+                f"Speed: {self.ship.speed} LY/hr",
+                SMALL,
+                MUTED,
+                70,
+                545,
+            )
             remaining = self.ship.capacity - len(self.mission.crew_members)
             text(
                 SCREEN,
@@ -893,8 +934,9 @@ class Game:
                 SMALL,
                 GREEN if remaining >= (self.site.survivor_count if self.site else 0) else RED,
                 70,
-                545,
+                580,
             )
+
         else:
             text(SCREEN, "No ship selected.", SMALL, RED, 70, 475)
 
@@ -903,7 +945,7 @@ class Game:
             f"Crew members aboard: {len(self.mission.crew_members)}",
             SMALL,
             TEXT,
-            800,
+            600,
             260,
         )
 
@@ -921,16 +963,16 @@ class Game:
                 f"Required-role check: {'READY' if has_role else 'MISSING'}",
                 SMALL,
                 GREEN if has_role else RED,
-                800,
-                310,
+                600,
+                295,
             )
             text(
                 SCREEN,
                 f"Required-equipment check: {'READY' if has_equipment else 'MISSING'}",
                 SMALL,
                 GREEN if has_equipment else RED,
-                800,
-                360,
+                600,
+                330,
             )
 
         Button(
@@ -947,37 +989,72 @@ class Game:
             launch_ready,
         ).draw(SCREEN)
 
+    def draw_launch_date(self):
+        # Launch time
+        if self.site and self.ship:
+            launch_time, arrival_time, travel_hours = self.mission.calculate_mission_time()
+            self.mission.travel_hours = travel_hours
+
+            text(
+                SCREEN,
+                f"Launch Time: {launch_time.strftime('%m/%d/%Y %I:%M %p')}",
+                SMALL,
+                MUTED,
+                600,
+                475
+            )
+
+            text(
+                SCREEN,
+                f"Estimated Arrival Time: {arrival_time.strftime('%m/%d/%Y %I:%M %p')}",
+                SMALL,
+                MUTED,
+                600,
+                505
+            )
+
+            if travel_hours <= self.mission.selected_rescue_site.rescue_time:
+                color = GREEN
+                message = f"Travel Time: {travel_hours:.2f} hours: READY"
+            else:
+                color = RED
+                message = f"Travel Time: {travel_hours:.2f} hours: NOT READY"
+
+            text(
+                SCREEN,
+                message,
+                SMALL,
+                color,
+                600,
+                535
+            )
+
     def draw_launch(self):
         elapsed = pygame.time.get_ticks() - self.launch_start
-        progress = min(1.0, elapsed / 4000.0)
+
+        if (
+            self.mission.selected_rescue_site is None or
+            self.mission.selected_ship is None or
+            not any(
+                member.role == "Pilot"
+                for member in self.mission.crew_members
+            )
+        ):
+            progress = 1
+        else:
+            progress = min(1.0, elapsed / 4000.0)
 
         for i in range(80):
             x = (i * 83 + 37) % WIDTH
             y = (i * 47 + 113) % HEIGHT
             pygame.draw.circle(SCREEN, (100, 120, 150), (x, y), 1)
 
-        center(SCREEN, "MISSION LAUNCH", BIG, WHITE, (WIDTH // 2, 200))
-
         if progress < 1:
-            center(
-                SCREEN,
-                "Launching rescue vessel...",
-                FONT,
-                BLUE,
-                (WIDTH // 2, 300),
-            )
 
-            bar = pygame.Rect(250, 375, 700, 30)
-            pygame.draw.rect(SCREEN, PANEL_2, bar, border_radius=15)
-            pygame.draw.rect(
-                SCREEN,
-                BLUE,
-                (bar.x, bar.y, int(bar.width * progress), bar.height),
-                border_radius=15,
-            )
+            center(SCREEN, "MISSION LAUNCH", BIG, WHITE, (WIDTH // 2, 100))
 
             sx = int(500 + 200 * progress)
-            sy = 600 - int(550 * progress)
+            sy = 600 - int(500 * progress)
 
             pygame.draw.polygon(
                 SCREEN,
@@ -995,13 +1072,6 @@ class Game:
             )
             pygame.draw.circle(SCREEN, BLUE, (sx, sy + 25), 8)
 
-            center(
-                SCREEN,
-                f"Destination: {self.site.name if self.site else 'UNKNOWN'}",
-                SMALL,
-                MUTED,
-                (WIDTH // 2, 500),
-            )
             return
 
         LAUNCH_SOUND.stop()
@@ -1011,6 +1081,7 @@ class Game:
         if success and self.mission_running:
             SUCCESS_SOUND.play()
             self.mission_running = False
+            self.mission_success = True
 
 
         center(
@@ -1040,13 +1111,63 @@ class Game:
                 (WIDTH // 2, 480),
             )
 
-        Button(
-            (WIDTH // 2 - 120, 535, 240, 50),
-            "PLAY AGAIN",
-            self.reset,
-        ).draw(SCREEN)
+        if success:
+            Button(
+                (WIDTH // 2 - 120, 535, 240, 50),
+                "CONTINUE",
+                self.go_to_credits,
+            ).draw(SCREEN)
+        else:
+            Button(
+                (WIDTH // 2 - 120, 535, 240, 50),
+                "PLAY AGAIN",
+                self.reset,
+            ).draw(SCREEN)
+
+
+    def draw_credits(self):
+        SCREEN.fill(SPLASH_BG)
+
+        names = [
+            "TEAM LEAD",
+            "Ron Morrison",
+            "",
+            "TEAM MEMBERS",
+            "Anthony Ortega",
+            "Brian Goin",
+            "Mendell Jackson",
+            "Eric Uzoukwu",
+            "",
+            "THANKS FOR PLAYING!"
+        ]
+
+        x = WIDTH // 2
+        y = self.credits_y
+
+        for name in names:
+            center(
+                SCREEN,
+                name,
+                TITLE,
+                MUTED,
+                (x, y)
+            )
+
+            y += 50
+
+        self.credits_y -= 1
+        self.credits_timer += 1
+
+        if self.credits_timer > 15*60:
+            self.reset()
+            pygame.mixer.music.play(-1)
 
     def draw(self):
+
+        if self.start_delay <= 0 and not self.crawl_started:
+            self.crawl_started = True
+        else:
+            self.start_delay -= 1
 
         if not self.crawl_started:
             return
@@ -1061,7 +1182,7 @@ class Game:
 
         SCREEN.fill(BG)
 
-        if not self.launching:
+        if not self.launching and self.page != "CREDITS":
             self.draw_header()
 
         if self.launching:
@@ -1076,6 +1197,9 @@ class Game:
             self.draw_equipment()
         elif self.page == "MISSION":
             self.draw_mission()
+            self.draw_launch_date()
+        elif self.page == "CREDITS":
+            self.draw_credits()
 
         if not self.launching and self.message:
             text(SCREEN, self.message, SMALL, self.message_color, 30, 735)
