@@ -17,10 +17,10 @@ class Mission:
         self.launch_time = None
 
         self.ships = [
-            Ship("Rectafongulus", 10, 100, 4),
-            Ship("Savior", 12, 80, 3.5),
-            Ship("Avenger", 15, 60, 3),
-            Ship("Tank", 20, 50, 2.5)
+            Ship("Rectafongulus", 10, 100, 4, 800),
+            Ship("Savior", 12, 80, 3.5, 900),
+            Ship("Avenger", 15, 60, 3, 1000),
+            Ship("Tank", 20, 50, 2.5, 1200)
         ]
 
         self.rescue_sites = [
@@ -108,7 +108,7 @@ class Mission:
             CrewMember("Mendell", "Medic", 225),
             CrewMember("John", "Medic", 150),
             CrewMember("Brian", "Mechanic", 275),
-            CrewMember("Bob", "Mechanic", 225)
+            CrewMember("Keyon", "Mechanic", 225)
         ]
 
         self.selected_ship = None

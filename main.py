@@ -395,6 +395,31 @@ class Game:
                 RED,
             )
 
+        if any(
+            member.name == "Keyon"
+            for member in self.mission.crew_members
+        ):
+            return (
+                False,
+                f"Keyon hacked the ship. The ship crashed and everyone died.",
+                RED,
+            )
+
+        total_weight = 0
+        for member in self.mission.crew_members:
+            total_weight += member.weight
+        for item in self.mission.selected_equipment:
+            total_weight += item.weight
+
+        print(total_weight)
+
+        if total_weight > self.mission.selected_ship.weight_limit:
+            return (
+                False,
+                f"You have too much weight on the {self.mission.selected_ship.name}!",
+                RED,
+            )
+
         return (
             True,
             f"Everyone has been rescued from {self.site.name}!",
@@ -759,6 +784,7 @@ class Game:
             text(SCREEN, f"Capacity: {ship.capacity}", SMALL, MUTED, 75, y + 55)
             text(SCREEN, f"Fuel: {ship.fuel:,} gallons", SMALL, MUTED, 300, y + 55)
             text(SCREEN, f"Speed: {ship.speed:,} LY/hr", SMALL, MUTED, 600, y + 55)
+            text(SCREEN, f"Weight Limit: {ship.weight_limit:,} lbs", SMALL, MUTED, 900, y + 55)
 
             if selected:
                 text(SCREEN, "SELECTED", SMALL, GREEN, 980, y + 15)
@@ -951,6 +977,20 @@ class Game:
                 GREEN if remaining >= (self.site.survivor_count if self.site else 0) else RED,
                 70,
                 580,
+            )
+            total_weight = 0
+            for member in self.mission.crew_members:
+                total_weight += member.weight
+            for item in self.mission.selected_equipment:
+                total_weight += item.weight
+            remaining_weight = self.ship.weight_limit - total_weight
+            text(
+                SCREEN,
+                f"Remaining weight: {remaining_weight}",
+                SMALL,
+                GREEN if remaining_weight >= (0 if self.ship else 0) else RED,
+                70,
+                615,
             )
 
         else:
