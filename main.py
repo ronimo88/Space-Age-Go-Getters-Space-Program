@@ -3,6 +3,7 @@ import pygame
 print("Target Package:", pygame.__file__)
 print("Version Info:", pygame.version.ver)
 import random
+from particle import Particle
 
 from mission import Mission
 
@@ -64,13 +65,16 @@ STARS = [(random.randint(0, WIDTH), random.randint(0, HEIGHT), random.randint(1,
 
 LAUNCH_SOUND = pygame.mixer.Sound("audio/launch.mp3")
 SUCCESS_SOUND = pygame.mixer.Sound("audio/mission_complete.mp3")
+FAILED_SOUND = pygame.mixer.Sound("audio/mission_failed.mp3")
 INTRO_SOUND = pygame.mixer.Sound("audio/intro.mp3")
 CRAWL_TITLE = "SPACE AGE GO-GETTERS"
+SHUTTLE_COLOR = (200, 200, 200)
 
 try:
     TITLE_SURFACE = pygame.image.load('images/title_text.png').convert_alpha()
+    SHIP_OBJECT = pygame.image.load('images/ship.png').convert_alpha()
 except pygame.error as e:
-    print(f"Unable to load image: {e}")
+    print(f"Unable to load images: {e}")
     sys.exit()
 
 CRAWL_TEXT = [
@@ -89,28 +93,29 @@ CRAWL_TEXT = [
     "The mission begins now....",
 ]
 
-
+# Draws text
 def text(surface, value, font, color, x, y):
     surface.blit(font.render(str(value), True, color), (x, y))
 
-
+# Draws centered text
 def center(surface, value, font, color, position):
     image = font.render(str(value), True, color)
     surface.blit(image, image.get_rect(center=position))
 
-
+# Draws the main panels
 def panel(surface, rect, title=None):
     pygame.draw.rect(surface, PANEL, rect, border_radius=12)
     pygame.draw.rect(surface, (45, 65, 95), rect, 2, border_radius=12)
     if title:
         text(surface, title, FONT, BLUE, rect.x + 18, rect.y + 14)
 
+# Draws background stars
 def draw_starfield():
     SCREEN.fill((0, 0, 0))
     for x, y, size in STARS:
         pygame.draw.circle(SCREEN, WHITE, (x, y), size)
 
-
+# Clickable button
 class Button:
     def __init__(self, rect, label, callback, enabled=True):
         self.rect = pygame.Rect(rect)
@@ -118,6 +123,7 @@ class Button:
         self.callback = callback
         self.enabled = enabled
 
+    # Draws the button
     def draw(self, surface):
         hovered = self.rect.collidepoint(pygame.mouse.get_pos())
 
@@ -132,6 +138,8 @@ class Button:
         pygame.draw.rect(surface, border, self.rect, 2, border_radius=8)
         center(surface, self.label, SMALL, color, self.rect.center)
 
+    """ Not used?
+    
     def handle(self, event):
         if (
             self.enabled
@@ -142,6 +150,7 @@ class Button:
             self.callback()
             return True
         return False
+    """
 
 
 class Game:
@@ -165,6 +174,7 @@ class Game:
         INTRO_SOUND.play()
         INTRO_SOUND.set_volume(1)
 
+    # Resets the mission
     def reset_mission(self):
         self.mission = Mission()
         self.page = "RESCUE SITE"
@@ -177,8 +187,11 @@ class Game:
         self.credits_y = HEIGHT
         self.credits_timer = 0
         self.mission_success = False
+        # List to hold active fire particles
+        self.particles = []
         SUCCESS_SOUND.stop()
 
+    # Resets back to the title page
     def reset_game(self):
         self.page = None
         self.reset_mission()
@@ -203,6 +216,7 @@ class Game:
     def ship(self):
         return self.mission.selected_ship
 
+    # Draws the Star Wars like scrolling text
     def draw_crawl(self):
         draw_starfield()
 
@@ -214,9 +228,9 @@ class Game:
 
             # Resize using the calculated dimensions
             resized_image = pygame.transform.scale(TITLE_SURFACE, (self.title_width, self.title_height))
-            new_rect = resized_image.get_rect()
-            new_rect.center = (WIDTH // 2, HEIGHT // 2)
-            SCREEN.blit(resized_image, new_rect)
+            rect = resized_image.get_rect()
+            rect.center = (WIDTH // 2, HEIGHT // 2)
+            SCREEN.blit(resized_image, rect)
 
 
         line_height = 34
@@ -249,6 +263,7 @@ class Game:
             self.crawl_done = True
             INTRO_SOUND.stop()
 
+    # Draws the title screen
     def draw_splash(self):
         SCREEN.fill(SPLASH_BG)
 
@@ -260,14 +275,17 @@ class Game:
         if (elapsed // 500) % 2 == 0:  # blinks every 0.5s
             center(SCREEN, "Click or press any key to begin", FONT, MUTED, (WIDTH // 2, 460))
 
+    # Sets the the message showing in the bottom left
     def set_message(self, message, color=TEXT):
         self.message = message
         self.message_color = color
 
+    # Selects the rescue site
     def select_site(self, site):
         self.mission.selected_rescue_site = site
         self.set_message(f"Rescue site selected: {site.name}", GREEN)
 
+    # Selects the ship
     def select_ship(self, ship):
         self.mission.selected_ship = ship
         self.set_message(f"Ship selected: {ship.name}", GREEN)
@@ -378,6 +396,16 @@ class Game:
                 RED,
             )
 
+        if any(
+                member.name == "Keyon"
+                for member in self.mission.crew_members
+        ):
+            return (
+                False,
+                f"Keyon hacked the ship. The ship crashed and everyone died.",
+                RED,
+            )
+
         if not any(
             item.name == self.site.required_equipment
             for item in self.mission.selected_equipment
@@ -392,16 +420,6 @@ class Game:
             return (
                 False,
                 f"It took too long to reach {self.site.name}. All the survivors died.",
-                RED,
-            )
-
-        if any(
-            member.name == "Keyon"
-            for member in self.mission.crew_members
-        ):
-            return (
-                False,
-                f"Keyon hacked the ship. The ship crashed and everyone died.",
                 RED,
             )
 
@@ -497,7 +515,9 @@ class Game:
                     self.launching = False
                     self.go_to_credits()
                 else:
-                    self.reset_mission()
+                    self.launching = False
+                    self.go_to("MISSION")
+                    self.mission_running = True
                     pygame.mixer.music.play(-1)
 
             return
@@ -626,7 +646,7 @@ class Game:
 
         text(
             SCREEN,
-            "Click a destination to select it.",
+            "Click a destination to select it. Use the tabs at the top to configure the mission.",
             SMALL,
             MUTED,
             50,
@@ -782,7 +802,7 @@ class Game:
 
             text(SCREEN, ship.name, FONT, WHITE, 75, y + 15)
             text(SCREEN, f"Capacity: {ship.capacity}", SMALL, MUTED, 75, y + 55)
-            text(SCREEN, f"Fuel: {ship.fuel:,} gallons", SMALL, MUTED, 300, y + 55)
+            text(SCREEN, f"Fuel: {ship.fuel:,}%", SMALL, MUTED, 300, y + 55)
             text(SCREEN, f"Speed: {ship.speed:,} LY/hr", SMALL, MUTED, 600, y + 55)
             text(SCREEN, f"Weight Limit: {ship.weight_limit:,} lbs", SMALL, MUTED, 900, y + 55)
 
@@ -942,7 +962,7 @@ class Game:
             )
             text(
                 SCREEN,
-                f"Rescue Time Limit: {self.site.rescue_time}",
+                f"Rescue Time Limit: {self.site.rescue_time} hrs",
                 SMALL,
                 MUTED,
                 70,
@@ -986,7 +1006,7 @@ class Game:
             remaining_weight = self.ship.weight_limit - total_weight
             text(
                 SCREEN,
-                f"Remaining weight: {remaining_weight}",
+                f"Remaining weight: {remaining_weight} lbs",
                 SMALL,
                 GREEN if remaining_weight >= (0 if self.ship else 0) else RED,
                 70,
@@ -1109,24 +1129,35 @@ class Game:
 
             center(SCREEN, "MISSION LAUNCH", BIG, WHITE, (WIDTH // 2, 100))
 
-            sx = int(500 + 200 * progress)
-            sy = 600 - int(500 * progress)
+            # Shuttle properties
+            shuttle_x = WIDTH // 2
+            shuttle_y = 700 - int(400 * progress)
 
-            pygame.draw.polygon(
-                SCREEN,
-                WHITE,
-                [
-                    (sx, sy),
-                    (sx - 60, sy + 25),
-                    (sx - 35, sy + 25),
-                    (sx - 55, sy + 55),
-                    (sx, sy + 40),
-                    (sx + 55, sy + 55),
-                    (sx + 35, sy + 25),
-                    (sx + 60, sy + 25),
-                ],
-            )
-            pygame.draw.circle(SCREEN, BLUE, (sx, sy + 25), 8)
+            # 1. Spawn new fire particles at the engine base
+            # Adjust nozzle offsets relative to your shuttle asset
+            left_nozzle = shuttle_x - 10
+            right_nozzle = shuttle_x + 10
+
+            for _ in range(5):  # Density of the fire
+                self.particles.append(Particle(left_nozzle, shuttle_y + 80))
+                self.particles.append(Particle(right_nozzle, shuttle_y + 80))
+
+            # 2. Update and draw particles
+            for particle in self.particles[:]:
+                particle.update()
+                if particle.life <= 0:
+                    self.particles.remove(particle)
+                else:
+                    particle.draw(SCREEN)
+
+            # 3. Draw a Space Shuttle (Draw this AFTER fire so it stays in front)
+            # Calculate new dimensions
+            new_width = int(SHIP_OBJECT.get_width() * 15 / 100)
+            new_height = int(SHIP_OBJECT.get_height() * 15 / 100)
+            resized_image = pygame.transform.smoothscale(SHIP_OBJECT, (new_width, new_height))
+            rect = resized_image.get_rect()
+            rect.center = (shuttle_x, shuttle_y-10)
+            SCREEN.blit(resized_image, rect)
 
             return
 
@@ -1134,11 +1165,16 @@ class Game:
 
         success, message, color = self.result
 
-        if success and self.mission_running:
-            SUCCESS_SOUND.play()
-            SUCCESS_SOUND.set_volume(0.0) if self.muted else SUCCESS_SOUND.set_volume(1.0)
+        if self.mission_running:
             self.mission_running = False
-            self.mission_success = True
+            if success:
+                SUCCESS_SOUND.play()
+                SUCCESS_SOUND.set_volume(0.0) if self.muted else SUCCESS_SOUND.set_volume(1.0)
+                self.mission_success = True
+            else:
+                FAILED_SOUND.play()
+                FAILED_SOUND.set_volume(0.0) if self.muted else FAILED_SOUND.set_volume(1.0)
+                self.mission_success = False
 
 
         center(
@@ -1177,7 +1213,7 @@ class Game:
         else:
             Button(
                 (WIDTH // 2 - 120, 535, 240, 50),
-                "PLAY AGAIN",
+                "TRY AGAIN",
                 self.reset_mission,
             ).draw(SCREEN)
 
@@ -1260,7 +1296,8 @@ class Game:
         if not self.launching and self.message:
             text(SCREEN, self.message, SMALL, self.message_color, 30, 735)
 
-        self.draw_mute_button()
+        if self.page != "CREDITS":
+            self.draw_mute_button()
 
         # Mute Button
 
