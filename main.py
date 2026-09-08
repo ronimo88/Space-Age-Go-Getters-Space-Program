@@ -1,5 +1,6 @@
 import sys
 import pygame
+
 print("Target Package:", pygame.__file__)
 print("Version Info:", pygame.version.ver)
 import random
@@ -93,14 +94,17 @@ CRAWL_TEXT = [
     "The mission begins now....",
 ]
 
+
 # Draws text
 def text(surface, value, font, color, x, y):
     surface.blit(font.render(str(value), True, color), (x, y))
+
 
 # Draws centered text
 def center(surface, value, font, color, position):
     image = font.render(str(value), True, color)
     surface.blit(image, image.get_rect(center=position))
+
 
 # Draws the main panels
 def panel(surface, rect, title=None):
@@ -109,11 +113,13 @@ def panel(surface, rect, title=None):
     if title:
         text(surface, title, FONT, BLUE, rect.x + 18, rect.y + 14)
 
+
 # Draws background stars
 def draw_starfield():
     SCREEN.fill((0, 0, 0))
     for x, y, size in STARS:
         pygame.draw.circle(SCREEN, WHITE, (x, y), size)
+
 
 # Clickable button
 class Button:
@@ -139,7 +145,7 @@ class Button:
         center(surface, self.label, SMALL, color, self.rect.center)
 
     """ Not used?
-    
+
     def handle(self, event):
         if (
             self.enabled
@@ -158,6 +164,13 @@ class Game:
     PAGES = ["RESCUE SITE", "SHIP", "CREW", "EQUIPMENT", "MISSION"]
 
     def __init__(self):
+        self.sites_completed = [
+            False,
+            False,
+            False,
+            False
+        ]
+
         self.page = None
         self.reset_mission()
         self.muted = False
@@ -223,15 +236,14 @@ class Game:
         # Title card fades in at the very start
 
         if self.crawl_y > HEIGHT + 200:
-            #title_font = pygame.font.SysFont("consolas", int(self.title_font_size), bold=True)
-            #center(SCREEN, CRAWL_TITLE, title_font, YELLOW, (WIDTH // 2, HEIGHT // 2 - 50))
+            # title_font = pygame.font.SysFont("consolas", int(self.title_font_size), bold=True)
+            # center(SCREEN, CRAWL_TITLE, title_font, YELLOW, (WIDTH // 2, HEIGHT // 2 - 50))
 
             # Resize using the calculated dimensions
             resized_image = pygame.transform.scale(TITLE_SURFACE, (self.title_width, self.title_height))
             rect = resized_image.get_rect()
             rect.center = (WIDTH // 2, HEIGHT // 2)
             SCREEN.blit(resized_image, rect)
-
 
         line_height = 34
         y = self.crawl_y
@@ -377,8 +389,8 @@ class Game:
             )
 
         if not any(
-            member.role == "Pilot"
-            for member in self.mission.crew_members
+                member.role == "Pilot"
+                for member in self.mission.crew_members
         ):
             return (
                 False,
@@ -387,8 +399,8 @@ class Game:
             )
 
         if not any(
-            member.role == self.site.required_role
-            for member in self.mission.crew_members
+                member.role == self.site.required_role
+                for member in self.mission.crew_members
         ):
             return (
                 False,
@@ -407,8 +419,8 @@ class Game:
             )
 
         if not any(
-            item.name == self.site.required_equipment
-            for item in self.mission.selected_equipment
+                item.name == self.site.required_equipment
+                for item in self.mission.selected_equipment
         ):
             return (
                 False,
@@ -504,16 +516,20 @@ class Game:
             self.toggle_mute()
             return
 
-
         if self.launching:
             if (
-                event.type == pygame.MOUSEBUTTONDOWN
-                and event.button == 1
-                and pygame.Rect(WIDTH // 2 - 120, 535, 240, 50).collidepoint(event.pos)
+                    event.type == pygame.MOUSEBUTTONDOWN
+                    and event.button == 1
+                    and pygame.Rect(WIDTH // 2 - 120, 535, 240, 50).collidepoint(event.pos)
             ):
                 if self.mission_success:
                     self.launching = False
-                    self.go_to_credits()
+                    if self.all_sites_completed():
+                        self.go_to_credits()
+                    else:
+                        self.reset_mission()
+                        pygame.mixer.music.play(-1)
+
                 else:
                     self.launching = False
                     self.go_to("MISSION")
@@ -524,11 +540,11 @@ class Game:
 
         # Navigation tabs.
         for i, page in enumerate(self.PAGES):
-            rect = pygame.Rect(30 + i * (TAB_WIDTH+10), 92, TAB_WIDTH, 48)
+            rect = pygame.Rect(30 + i * (TAB_WIDTH + 10), 92, TAB_WIDTH, 48)
             if (
-                event.type == pygame.MOUSEBUTTONDOWN
-                and event.button == 1
-                and rect.collidepoint(event.pos)
+                    event.type == pygame.MOUSEBUTTONDOWN
+                    and event.button == 1
+                    and rect.collidepoint(event.pos)
             ):
                 self.go_to(page)
                 return
@@ -537,9 +553,9 @@ class Game:
             for i, site in enumerate(self.mission.rescue_sites):
                 rect = pygame.Rect(50, 225 + i * 110, 1100, 90)
                 if (
-                    event.type == pygame.MOUSEBUTTONDOWN
-                    and event.button == 1
-                    and rect.collidepoint(event.pos)
+                        event.type == pygame.MOUSEBUTTONDOWN
+                        and event.button == 1
+                        and rect.collidepoint(event.pos)
                 ):
                     self.select_site(site)
 
@@ -547,9 +563,9 @@ class Game:
             for i, ship in enumerate(self.mission.ships):
                 rect = pygame.Rect(50, 225 + i * 130, 1100, 105)
                 if (
-                    event.type == pygame.MOUSEBUTTONDOWN
-                    and event.button == 1
-                    and rect.collidepoint(event.pos)
+                        event.type == pygame.MOUSEBUTTONDOWN
+                        and event.button == 1
+                        and rect.collidepoint(event.pos)
                 ):
                     self.select_ship(ship)
 
@@ -558,9 +574,9 @@ class Game:
             for i, member in enumerate(self.mission.available_members):
                 rect = pygame.Rect(50, 240 + i * 48, 500, 38)
                 if (
-                    event.type == pygame.MOUSEBUTTONDOWN
-                    and event.button == 1
-                    and rect.collidepoint(event.pos)
+                        event.type == pygame.MOUSEBUTTONDOWN
+                        and event.button == 1
+                        and rect.collidepoint(event.pos)
                 ):
                     self.add_member(member)
                     return
@@ -569,9 +585,9 @@ class Game:
             for i, member in enumerate(self.mission.crew_members):
                 rect = pygame.Rect(650, 240 + i * 48, 500, 38)
                 if (
-                    event.type == pygame.MOUSEBUTTONDOWN
-                    and event.button == 1
-                    and rect.collidepoint(event.pos)
+                        event.type == pygame.MOUSEBUTTONDOWN
+                        and event.button == 1
+                        and rect.collidepoint(event.pos)
                 ):
                     self.remove_member(member)
                     return
@@ -604,17 +620,27 @@ class Game:
             reset_rect = pygame.Rect(60, 650, 170, 55)
 
             if (
-                event.type == pygame.MOUSEBUTTONDOWN
-                and event.button == 1
-                and launch_rect.collidepoint(event.pos)
+                    event.type == pygame.MOUSEBUTTONDOWN
+                    and event.button == 1
+                    and launch_rect.collidepoint(event.pos)
             ):
                 self.launch()
             elif (
-                event.type == pygame.MOUSEBUTTONDOWN
-                and event.button == 1
-                and reset_rect.collidepoint(event.pos)
+                    event.type == pygame.MOUSEBUTTONDOWN
+                    and event.button == 1
+                    and reset_rect.collidepoint(event.pos)
             ):
                 self.reset_mission()
+
+    def all_sites_completed(self):
+        completed = True
+        for site in self.mission.rescue_sites:
+            index = self.mission.rescue_sites.index(site)
+            if not self.sites_completed[index]:
+                completed = False
+                break
+        print(f"Completed: {completed}")
+        return completed
 
     def draw_header(self):
         text(SCREEN, "SPACE AGE GO-GETTERS", TITLE, TEXT, 30, 22)
@@ -636,7 +662,7 @@ class Game:
         # for gameplay and are not intended to represent real astronomy.
         return {
             "Corneria": (205, 350),
-            "Fichina": (470, 550),
+            "Katina": (470, 550),
             "Titania": (745, 350),
             "Venom": (1000, 550),
         }
@@ -704,7 +730,12 @@ class Game:
             pygame.draw.circle(SCREEN, (10, 18, 35), (x + 10, y + 9), max(3, radius // 6))
 
             # Planet label and mission data.
-            center(SCREEN, site.name, SMALL, WHITE, (x, y - 53))
+            index = self.mission.rescue_sites.index(site)
+            if self.sites_completed[index]:
+                center(SCREEN, f"{site.name} (COMPLETED)", SMALL, GREEN, (x, y - 53))
+            else:
+                center(SCREEN, site.name, SMALL, WHITE, (x, y - 53))
+
             center(
                 SCREEN,
                 f"{site.distance} LY",
@@ -716,15 +747,14 @@ class Game:
             # Selection hotspot.
             hotspot = pygame.Rect(x - 48, y - 48, 96, 96)
             if (
-                pygame.mouse.get_pressed()[0]
-                and hotspot.collidepoint(mouse)
+                    pygame.mouse.get_pressed()[0]
+                    and hotspot.collidepoint(mouse)
             ):
                 self.select_site(site)
 
         # Legend
         legend_x = 75
         legend_y = 660
-
 
         # Selected destination details.
         if self.site:
@@ -734,7 +764,7 @@ class Game:
                 SMALL,
                 GREEN,
                 legend_x,
-                legend_y-80,
+                legend_y - 80,
             )
             text(
                 SCREEN,
@@ -742,7 +772,7 @@ class Game:
                 SMALL,
                 MUTED,
                 legend_x,
-                legend_y-60,
+                legend_y - 60,
             )
             text(
                 SCREEN,
@@ -750,7 +780,7 @@ class Game:
                 SMALL,
                 MUTED,
                 legend_x,
-                legend_y-40,
+                legend_y - 40,
             )
             text(
                 SCREEN,
@@ -758,7 +788,7 @@ class Game:
                 SMALL,
                 MUTED,
                 legend_x,
-                legend_y-20,
+                legend_y - 20,
             )
             text(
                 SCREEN,
@@ -802,13 +832,11 @@ class Game:
 
             text(SCREEN, ship.name, FONT, WHITE, 75, y + 15)
             text(SCREEN, f"Capacity: {ship.capacity}", SMALL, MUTED, 75, y + 55)
-            text(SCREEN, f"Fuel: {ship.fuel:,}%", SMALL, MUTED, 300, y + 55)
-            text(SCREEN, f"Speed: {ship.speed:,} LY/hr", SMALL, MUTED, 600, y + 55)
-            text(SCREEN, f"Weight Limit: {ship.weight_limit:,} lbs", SMALL, MUTED, 900, y + 55)
+            text(SCREEN, f"Speed: {ship.speed:,} LY/hr", SMALL, MUTED, 300, y + 55)
+            text(SCREEN, f"Weight Limit: {ship.weight_limit:,} lbs", SMALL, MUTED, 600, y + 55)
 
             if selected:
                 text(SCREEN, "SELECTED", SMALL, GREEN, 980, y + 15)
-
 
     def draw_crew(self):
         panel(SCREEN, pygame.Rect(30, 175, 1140, 550), "CREW MANAGEMENT")
@@ -1109,12 +1137,12 @@ class Game:
         elapsed = pygame.time.get_ticks() - self.launch_start
 
         if (
-            self.mission.selected_rescue_site is None or
-            self.mission.selected_ship is None or
-            not any(
-                member.role == "Pilot"
-                for member in self.mission.crew_members
-            )
+                self.mission.selected_rescue_site is None or
+                self.mission.selected_ship is None or
+                not any(
+                    member.role == "Pilot"
+                    for member in self.mission.crew_members
+                )
         ):
             progress = 1
         else:
@@ -1156,7 +1184,7 @@ class Game:
             new_height = int(SHIP_OBJECT.get_height() * 15 / 100)
             resized_image = pygame.transform.smoothscale(SHIP_OBJECT, (new_width, new_height))
             rect = resized_image.get_rect()
-            rect.center = (shuttle_x, shuttle_y-10)
+            rect.center = (shuttle_x, shuttle_y - 10)
             SCREEN.blit(resized_image, rect)
 
             return
@@ -1164,6 +1192,10 @@ class Game:
         LAUNCH_SOUND.stop()
 
         success, message, color = self.result
+
+        if success:
+            index = self.mission.rescue_sites.index(self.site)
+            self.sites_completed[index] = True
 
         if self.mission_running:
             self.mission_running = False
@@ -1175,7 +1207,6 @@ class Game:
                 FAILED_SOUND.play()
                 FAILED_SOUND.set_volume(0.0) if self.muted else FAILED_SOUND.set_volume(1.0)
                 self.mission_success = False
-
 
         center(
             SCREEN,
@@ -1217,19 +1248,26 @@ class Game:
                 self.reset_mission,
             ).draw(SCREEN)
 
-
     def draw_credits(self):
         SCREEN.fill(SPLASH_BG)
 
         names = [
+            "CONGRATULATIONS!",
+            "",
+            "You have saved all survivors in the galaxy!",
+            "Everyone is eternally grateful!",
+            "",
+            "",
             "TEAM LEAD",
             "Ron Morrison",
+            "",
             "",
             "TEAM MEMBERS",
             "Anthony Ortega",
             "Brian Goin",
             "Mendell Jackson",
             "Eric Uzoukwu",
+            "",
             "",
             "THANKS FOR PLAYING!"
         ]
@@ -1251,7 +1289,7 @@ class Game:
         self.credits_y -= 1
         self.credits_timer += 1
 
-        if self.credits_timer > 15*60:
+        if self.credits_timer > 1200:
             self.reset_game()
 
     def draw(self):
@@ -1259,6 +1297,7 @@ class Game:
         if self.start_delay <= 0 and not self.crawl_started:
             self.crawl_started = True
         else:
+            SCREEN.fill(SPLASH_BG)
             self.start_delay -= 1
 
         if not self.crawl_started:

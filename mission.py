@@ -17,10 +17,10 @@ class Mission:
         self.launch_time = None
 
         self.ships = [
-            Ship("Rectafongulus", 10, 40, 4, 800),
-            Ship("Savior", 12, 60, 3.5, 900),
-            Ship("Avenger", 15, 80, 3, 1000),
-            Ship("Tank", 20, 100, 2.5, 1200)
+            Ship("Savior", 10, 40, 4, 800),
+            Ship("Avenger", 12, 60, 3.5, 900),
+            Ship("Vanguard", 15, 80, 3, 1000),
+            Ship("Rectafongulus", 20, 100, 2.5, 1200)
         ]
 
         self.rescue_sites = [
@@ -33,7 +33,7 @@ class Mission:
                 "Human Rescue Hoist"
             ),
             RescueSite(
-                "Fichina",
+                "Katina",
                 20,
                 8, 2,
                 15,
