@@ -1266,7 +1266,6 @@ class Game:
             "Anthony Ortega",
             "Brian Goin",
             "Mendell Jackson",
-            "Eric Uzoukwu",
             "",
             "",
             "THANKS FOR PLAYING!"
