@@ -17,10 +17,10 @@ class Mission:
         self.launch_time = None
 
         self.ships = [
-            Ship("Savior", 10, 40, 4, 800),
-            Ship("Avenger", 12, 60, 3.5, 900),
-            Ship("Vanguard", 15, 80, 3, 1000),
-            Ship("Rectafongulus", 20, 100, 2.5, 1200)
+            Ship("Savior", 12, 40, 4, 1100),
+            Ship("Avenger", 14, 60, 3.5, 1200),
+            Ship("Vanguard", 18, 80, 3, 1300),
+            Ship("Rectafongulus", 22, 100, 2.5, 1400)
         ]
 
         self.rescue_sites = [
@@ -64,51 +64,58 @@ class Mission:
             MedicalEquipment(
                 "Human Rescue Hoist",
                 "Lifts stranded or injured people to safety",
-                250,
+                150,
+                5
             ),
             MedicalEquipment(
                 "Zero-Gravity Stretcher",
                 "Moves injured people without worsening their injuries",
                 45,
+                5
             ),
             MedicalEquipment(
                 "Emergency Trauma Kit",
                 "Treats bleeding, burns, and broken bones",
                 20,
+                5
             ),
             MedicalEquipment(
                 "Portable Oxygen System",
                 "Provides oxygen to survivors who cannot breathe normally",
                 30,
+                5
             ),
             MedicalEquipment(
                 "Medical Scanner",
                 "Checks vital signs and identifies injuries",
                 12,
+                5
             ),
             MedicalEquipment(
                 "Thermal Rescue Blanket",
                 "Protects survivors from extreme temperatures",
                 5,
+                5
             ),
             MedicalEquipment(
                 "Portable Medical Pod",
                 "Stabilizes critically injured people during transport",
                 300,
+                5
             ),
         ]
 
         self.available_members = [
-            CrewMember("Ron", "Commander", 250),
-            CrewMember("Sean", "Commander", 200),
-            CrewMember("Eric", "Pilot", 180),
-            CrewMember("Sunny", "Pilot", 125),
-            CrewMember("Anthony", "Engineer", 175),
-            CrewMember("Tom", "Engineer", 175),
-            CrewMember("Mendell", "Medic", 225),
-            CrewMember("John", "Medic", 150),
-            CrewMember("Brian", "Mechanic", 275),
-            CrewMember("Keyon", "Mechanic", 225)
+            CrewMember("Ron", "Commander", 250, 10),
+            CrewMember("Sean", "Commander", 200, 10),
+            CrewMember("Eric", "Pilot", 180, 10),
+            CrewMember("Sunny", "Pilot", 125, 10),
+            CrewMember("Anthony", "Engineer", 175, 10),
+            CrewMember("Tom", "Engineer", 175, 10),
+            CrewMember("Mendell", "Medic", 225, 10),
+            CrewMember("John", "Medic", 150, 10),
+            CrewMember("Brian", "Mechanic", 275, 10),
+            CrewMember("Keyon", "Mechanic", 225, 10)
         ]
 
         self.selected_ship = None
@@ -133,4 +140,8 @@ class Mission:
         )
 
         return self.launch_time, arrival_time, travel_hours
+
+    def get_chance(self):
+        return 10 * len(self.crew_members) + 5 * len(self.selected_equipment)
+
 

@@ -1,9 +1,10 @@
 
 class CrewMember:
-    def __init__(self, name, role, weight):
+    def __init__(self, name, role, weight, chance):
         self.name = name
         self.role = role # Medic, Engineer, Pilot, Commander
         self.weight = weight # In Kilograms
+        self.chance = chance
 
     def summary(self):
         return (

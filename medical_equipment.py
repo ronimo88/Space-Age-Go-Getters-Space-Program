@@ -1,8 +1,9 @@
 class MedicalEquipment:
-    def __init__(self, name, purpose, weight, status="Ready"):
+    def __init__(self, name, purpose, weight, chance, status="Ready"):
         self.name = name
         self.purpose = purpose
         self.weight = weight
+        self.chance = chance
         self.status = status
 
     def display_info(self):

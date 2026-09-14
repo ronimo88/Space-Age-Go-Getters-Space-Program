@@ -12,20 +12,12 @@ class RescueSite:
     ):
         self.name = name
         self.distance = distance
-        self.rescue_time = rescue_time # (1) Life Support Failure (2) Engine Failure (3) Missing Crew
+        self.rescue_time = rescue_time
         self.danger_level = danger_level
         self.survivor_count = survivor_count
         self.required_role = required_role
         self.required_equipment = required_equipment
 
-    @staticmethod
-    def get_headers(show_number):
-        if show_number:
-            headers = ["Number", "Name", "Distance", "Emergency Type", "Danger Level", "Survivor Count", "Required Role"]
-            return f"{headers[0]:<10}{headers[1]:<15}{headers[2]:<15}{headers[3]:<20}{headers[4]:<15}{headers[5]:<15}{headers[6]:<15}"
-        else:
-            headers = ["Name", "Distance", "Emergency Type", "Danger Level", "Survivor Count", "Required Role"]
-            return f"{headers[0]:<15}{headers[1]:<15}{headers[2]:<15}{headers[3]:<20}{headers[4]:<15}{headers[5]:<15}"
 
     def summary(self):
         return(

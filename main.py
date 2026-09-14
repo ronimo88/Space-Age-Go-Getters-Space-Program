@@ -1,5 +1,6 @@
 import sys
 import pygame
+import random
 
 print("Target Package:", pygame.__file__)
 print("Version Info:", pygame.version.ver)
@@ -408,16 +409,6 @@ class Game:
                 RED,
             )
 
-        if any(
-                member.name == "Keyon"
-                for member in self.mission.crew_members
-        ):
-            return (
-                False,
-                f"Keyon hacked the ship. The ship crashed and everyone died.",
-                RED,
-            )
-
         if not any(
                 item.name == self.site.required_equipment
                 for item in self.mission.selected_equipment
@@ -441,12 +432,25 @@ class Game:
         for item in self.mission.selected_equipment:
             total_weight += item.weight
 
-        print(total_weight)
-
         if total_weight > self.mission.selected_ship.weight_limit:
             return (
                 False,
                 f"You have too much weight on the {self.mission.selected_ship.name}!",
+                RED,
+            )
+
+        chance_succeed = random.randrange(0,100)
+        events = [
+            "Your ship was sucked in by a black hole",
+            f"{random.choice(self.mission.crew_members).name} hacked the ship. The ship crashed and everyone died.",
+            "You were attacked by space pirates and they destroyed the ship",
+            "Your ship ran into an asteroid field and took too much damage and crashed",
+            f"Your ship came in too hot and crashed landed on {self.mission.selected_rescue_site.name}!",
+        ]
+        if self.mission.get_chance() < chance_succeed:
+            return (
+                False,
+                f"{random.choice(events)}",
                 RED,
             )
 
@@ -843,7 +847,7 @@ class Game:
 
         text(
             SCREEN,
-            "Add and remove crew members. Check the rescue site to see what roles are needed.",
+            "Add and remove crew members. Check rescue site for requirements. Each member adds 10% chance of mission success.",
             SMALL,
             MUTED,
             50,
@@ -897,7 +901,7 @@ class Game:
 
         text(
             SCREEN,
-            "Add and remove crew equipment. Check the rescue site to see what equipment is needed.",
+            "Add and remove crew equipment. Check rescue site for requirements. Each item adds 5% chance of mission success.",
             SMALL,
             MUTED,
             50,
@@ -1079,6 +1083,24 @@ class Game:
                 330,
             )
 
+        chance = min(100, self.mission.get_chance())
+
+        if chance < 30:
+            color = RED
+        elif chance < 70:
+            color = YELLOW
+        else:
+            color = GREEN
+
+        text(
+            SCREEN,
+            f"Chance of success based off of crew and equipment: {chance}%",
+            SMALL,
+            color,
+            600,
+            565
+        )
+
         Button(
             (60, 650, 170, 55),
             "RESET",
@@ -1258,11 +1280,8 @@ class Game:
             "Everyone is eternally grateful!",
             "",
             "",
-            "TEAM LEAD",
-            "Ron Morrison",
-            "",
-            "",
             "TEAM MEMBERS",
+            "Ron Morrison",
             "Anthony Ortega",
             "Brian Goin",
             "Mendell Jackson",
